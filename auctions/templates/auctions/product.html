@@ -1,0 +1,136 @@
+{% extends "auctions/layout.html" %}
+
+{% block title %}
+    {{listing_data.item_name}}
+{% endblock %}
+
+{% block body %}
+    {% if user.is_authenticated %}
+        {% if owner %}
+            <a href="{% url 'close_bid' listing_data.item_name %}"><button style="margin-right: 35px; margin-top: 8px;" class="btn btn-warning float-right">close bid</button></a><br>
+        {% elif is_Watchlisted is None%}
+        {% else %}
+            {% if is_Watchlisted %}
+                <button id="btn" style="margin-right: 35px; margin-top: 8px;" class= "btn btn-outline-danger btn-sm float-right" onclick='change("{{listing_data.item_name}}")'>Remove from Watchlist</button>
+            {% else %}
+                <button id="btn" style="margin-right: 35px; margin-top: 8px;" class= "btn btn-success btn-sm float-right" onclick='change("{{listing_data.item_name}}")'>Add to Watchlist</button> 
+            {% endif %}
+        {% endif %}
+    {% endif %}
+    
+    <script>
+        function change(n){
+        if(btn.innerText === "Add to Watchlist"){
+            btn.innerText = "Remove from Watchlist";
+            btn.setAttribute("class","btn btn-outline-danger btn-sm float-right");
+        }else{
+            btn.innerText= "Add to Watchlist";
+            btn.setAttribute("class","btn btn-success btn-sm float-right");
+        }
+
+        $.ajax({
+            url:"/"+n+"/button"
+        }).done(function(){
+            if(btn.innerText === "Add to Watchlist"){
+                alert("Removed Successfully");
+            }
+            else{
+                alert("Added Successfully");
+            }
+        });
+    }
+    </script>
+
+    <h1>Listing: {{listing_data.item_name}}</h1>
+    {%if start %}
+        {%if message %}
+        <div style ="text-align:center; margin-left:520px; margin-right:570px;" class="alert alert-danger" role="alert">
+            {{message}}[${{listing_data.start_price}}]
+        </div>
+        {% endif %}
+    {% else %}
+        {%if message %}
+        <div style ="text-align:center; margin-left:520px; margin-right:570px;" class="alert alert-danger" role="alert">
+            {{message}}[${{bid_data.current_price}}]
+        </div>
+        {% endif %}
+    {% endif %}
+
+    <br>
+    <div style="width: 100%; overflow: hidden;">
+        <div style="width: 400px; float: left;">
+            <img style="width: 400px; height: 300px; overflow: hidden;" src="{{ listing_data.item_image }}"><br><br>
+
+            {%if status %}
+            <form method="post">
+                {% csrf_token %}
+                <div style="padding-top: 10px;">
+                <b style="font-size: 22px;">Bid now :</b>
+                {{bid_form}}
+                <input  style ="padding:4px; margin-bottom:5px;" class="btn btn-outline-dark btn-sm btn btn" type="submit" value="Place Bid">
+            </form>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div style="margin-left: 450px;"> 
+            <div style="float: right;margin-right: 120px;max-width: 372px;">
+                <h3><u>Comments:</u></h3>
+                {% if owner or status %}
+                <br>
+                <form method="post">
+                    {% csrf_token %}
+                    {{comment_form}}
+                    <input style="width:40px; padding:4px;margin-bottom:6px;" class="btn btn-outline-dark btn-sm btn btn" type="submit" value="Add">
+                </form>
+                <br>
+                {% endif %}
+                {% if comment_data %}
+                {% for item in comment_data %}
+                        <b><i>{{item.comment_by}}</b></i><br>{{item.item_comments}}<br><br>
+                {% endfor %}
+                {% else %}
+                <i style="font-size:20px">no comments yet.</i>
+                {% endif %}
+            </div>
+            <div style="max-width: 500px;">
+            <h3 style="text-decoration: underline;">Product Information/Specifications:</h3><br>
+            <ul style="font-size: 20px;">
+                <li>Product name : {{listing_data.item_name}}</li>
+                <li>Category : {{listing_data.item_category}}</li>
+                <li>Description : {{listing_data.item_description}}</li>
+                {% if not closed %}
+                    <li>Start price : ${{listing_data.start_price}}</li>
+                {% endif %} 
+                <li>Created by: {{listing_data.item_owner}}</li>
+                <li>Status : <b>{{listing_data.item_status}}</b></li>
+                {% if user.is_authenticated %}
+                    {% if not closed %}
+                        {% if bid_data.current_price is None %}
+                            <li>Current price : <i>[No bids yet]</i></li>
+                        {% else %}
+                            <li>Current price : ${{bid_data.current_price}} by {{bid_data.bid_by}}</li>
+                        {% endif %}
+                    {% endif %}     
+                {% endif %} 
+            </ul>
+            </div>
+            {% if login %}
+                <br><br><p><i><b style="font-size: 22px;">Login to Bid, Comment , Add to Watchlist and View Current Price.</b></i></p>
+            {% endif %} 
+            
+            
+            
+            
+        </div>
+    </div>  
+
+    <hr>
+    
+    {% if closed %}
+        <div class="alert alert-dark" role="alert">
+            <p><i><b style="font-size: 22px;"><center>This auction is won by "{{winner.bid_by}}" for ${{winner.current_price}}</center></b></i></p>
+        </div>
+        <hr> 
+    {% endif %} 
+{% endblock %}
